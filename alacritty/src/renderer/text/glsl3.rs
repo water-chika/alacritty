@@ -370,7 +370,7 @@ impl TextRenderBatch for Batch {
             bg_r: cell.bg.r,
             bg_g: cell.bg.g,
             bg_b: cell.bg.b,
-            bg_a: (cell.bg_alpha * 255.0) as u8,
+            bg_a: 255,
         });
     }
 }

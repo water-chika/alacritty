@@ -163,10 +163,6 @@ impl<'a> Iterator for RenderableContent<'a> {
                 if self.cursor.shape == CursorShape::Block {
                     cell.fg = self.cursor.text_color;
                     cell.bg = self.cursor.cursor_color;
-
-                    // Since we draw Block cursor by drawing cell below it with a proper color,
-                    // we must adjust alpha to make it visible.
-                    cell.bg_alpha = 1.;
                 }
 
                 return Some(cell);
@@ -185,7 +181,6 @@ pub struct RenderableCell {
     pub point: Point<usize>,
     pub fg: Rgb,
     pub bg: Rgb,
-    pub bg_alpha: f32,
     pub underline: Rgb,
     pub flags: Flags,
     pub extra: Option<Box<RenderableCellExtra>>,
@@ -201,18 +196,8 @@ pub struct RenderableCellExtra {
 
 impl RenderableCell {
     fn new(content: &mut RenderableContent<'_>, cell: Indexed<&Cell>) -> Self {
-        // Lookup RGB values.
-        let mut fg = Self::compute_fg_rgb(content, cell.fg, cell.flags);
-        let mut bg = Self::compute_bg_rgb(content, cell.bg);
-        fg = Rgb::new(0, 0, 0);
-        bg = Rgb::new(255, 255, 255);
-
-        let mut bg_alpha = if cell.flags.contains(Flags::INVERSE) {
-            mem::swap(&mut fg, &mut bg);
-            1.0
-        } else {
-            Self::compute_bg_alpha(content.config, cell.bg)
-        };
+        let mut fg = Rgb::new(0, 0, 0);
+        let mut bg = Rgb::new(255, 255, 255);
 
         let is_selected = content.terminal_content.selection.map_or(false, |selection| {
             selection.contains_cell(
@@ -237,30 +222,19 @@ impl RenderableCell {
             if is_first {
                 let (config_fg, config_bg) =
                     (colors.hints.start.foreground, colors.hints.start.background);
-                Self::compute_cell_rgb(&mut fg, &mut bg, &mut bg_alpha, config_fg, config_bg);
+                Self::compute_cell_rgb(&mut fg, &mut bg, config_fg, config_bg);
             } else if c.is_some() {
                 let (config_fg, config_bg) =
                     (colors.hints.end.foreground, colors.hints.end.background);
-                Self::compute_cell_rgb(&mut fg, &mut bg, &mut bg_alpha, config_fg, config_bg);
+                Self::compute_cell_rgb(&mut fg, &mut bg, config_fg, config_bg);
             } else {
                 flags.insert(Flags::UNDERLINE);
             }
 
             character = c.unwrap_or(character);
         } else if is_selected {
-            let config_bg = colors.selection.foreground;
-            let config_fg = colors.selection.background;
-            Self::compute_cell_rgb(&mut fg, &mut bg, &mut bg_alpha, config_fg, config_bg);
-
-            if fg == bg && !cell.flags.contains(Flags::HIDDEN) {
-                // Reveal inversed text when fg/bg is the same.
-                fg = content.color(NamedColor::Background as usize);
-                bg = content.color(NamedColor::Foreground as usize);
-                bg_alpha = 1.0;
-            }
             fg = Rgb::new(255, 255, 255);
             bg = Rgb::new(0, 0, 0);
-            bg_alpha = 1.0;
         } else if content.search.as_mut().map_or(false, |search| search.advance(cell.point)) {
             let focused = content.focused_match.map_or(false, |fm| fm.contains(&cell.point));
             let (config_fg, config_bg) = if focused {
@@ -268,12 +242,7 @@ impl RenderableCell {
             } else {
                 (colors.search.matches.foreground, colors.search.matches.background)
             };
-            Self::compute_cell_rgb(&mut fg, &mut bg, &mut bg_alpha, config_fg, config_bg);
-        }
-
-        // Apply transparency to all renderable cells if `transparent_background_colors` is set
-        if bg_alpha > 0. && content.config.colors.transparent_background_colors {
-            bg_alpha = content.config.window_opacity();
+            Self::compute_cell_rgb(&mut fg, &mut bg, config_fg, config_bg);
         }
 
         // Convert cell point to viewport position.
@@ -294,13 +263,12 @@ impl RenderableCell {
             })
         });
 
-        RenderableCell { flags, character, bg_alpha, point, fg, bg, underline, extra }
+        RenderableCell { flags, character, point, fg, bg, underline, extra }
     }
 
     /// Check if cell contains any renderable content.
     fn is_empty(&self) -> bool {
-        self.bg_alpha == 0.
-            && self.character == ' '
+            self.character == ' '
             && self.extra.is_none()
             && !self.flags.intersects(Flags::ALL_UNDERLINES | Flags::STRIKEOUT)
     }
@@ -309,16 +277,12 @@ impl RenderableCell {
     fn compute_cell_rgb(
         cell_fg: &mut Rgb,
         cell_bg: &mut Rgb,
-        bg_alpha: &mut f32,
         fg: CellRgb,
         bg: CellRgb,
     ) {
         let old_fg = mem::replace(cell_fg, fg.color(*cell_fg, *cell_bg));
         *cell_bg = bg.color(old_fg, *cell_bg);
 
-        if bg != CellRgb::CellBackground {
-            *bg_alpha = 1.0;
-        }
     }
 
     /// Get the RGB color from a cell's foreground color.
@@ -368,31 +332,6 @@ impl RenderableCell {
         }
     }
 
-    /// Get the RGB color from a cell's background color.
-    #[inline]
-    fn compute_bg_rgb(content: &RenderableContent<'_>, bg: Color) -> Rgb {
-        match bg {
-            Color::Spec(rgb) => rgb.into(),
-            Color::Named(ansi) => content.color(ansi as usize),
-            Color::Indexed(idx) => content.color(idx as usize),
-        }
-    }
-
-    /// Compute background alpha based on cell's original color.
-    ///
-    /// Since an RGB color matching the background should not be transparent, this is computed
-    /// using the named input color, rather than checking the RGB of the background after its color
-    /// is computed.
-    #[inline]
-    fn compute_bg_alpha(config: &UiConfig, bg: Color) -> f32 {
-        if bg == Color::Named(NamedColor::Background) {
-            0.
-        } else if config.colors.transparent_background_colors {
-            config.window_opacity()
-        } else {
-            1.
-        }
-    }
 }
 
 /// Cursor storing all information relevant for rendering.

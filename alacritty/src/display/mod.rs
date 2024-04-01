@@ -458,8 +458,7 @@ impl Display {
         renderer.resize(&size_info);
 
         // Clear screen.
-        let background_color = config.colors.primary.background;
-        renderer.clear(background_color, config.window_opacity());
+        renderer.clear();
 
         // Disable shadows for transparent windows on macOS.
         #[cfg(target_os = "macos")]
@@ -782,7 +781,7 @@ impl Display {
         // Make sure this window's OpenGL context is active.
         self.make_current();
 
-        self.renderer.clear(background_color, config.window_opacity());
+        self.renderer.clear();
         let mut lines = RenderLines::new();
 
         // Optimize loop hint comparator.

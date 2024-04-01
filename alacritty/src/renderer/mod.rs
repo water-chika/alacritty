@@ -224,7 +224,6 @@ impl Renderer {
                 character,
                 extra: None,
                 flags: Flags::empty(),
-                bg_alpha: 1.0,
                 fg,
                 bg,
                 underline: fg,
@@ -270,13 +269,13 @@ impl Renderer {
     }
 
     /// Fill the window with `color` and `alpha`.
-    pub fn clear(&self, color: Rgb, alpha: f32) {
+    pub fn clear(&self) {
         unsafe {
             gl::ClearColor(
                 255.0,
                 255.0,
                 255.0,
-                alpha,
+                255.0,
             );
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
