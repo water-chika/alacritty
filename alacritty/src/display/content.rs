@@ -204,6 +204,8 @@ impl RenderableCell {
         // Lookup RGB values.
         let mut fg = Self::compute_fg_rgb(content, cell.fg, cell.flags);
         let mut bg = Self::compute_bg_rgb(content, cell.bg);
+        fg = Rgb::new(0, 0, 0);
+        bg = Rgb::new(255, 255, 255);
 
         let mut bg_alpha = if cell.flags.contains(Flags::INVERSE) {
             mem::swap(&mut fg, &mut bg);
@@ -246,8 +248,8 @@ impl RenderableCell {
 
             character = c.unwrap_or(character);
         } else if is_selected {
-            let config_fg = colors.selection.foreground;
-            let config_bg = colors.selection.background;
+            let config_bg = colors.selection.foreground;
+            let config_fg = colors.selection.background;
             Self::compute_cell_rgb(&mut fg, &mut bg, &mut bg_alpha, config_fg, config_bg);
 
             if fg == bg && !cell.flags.contains(Flags::HIDDEN) {
@@ -256,6 +258,9 @@ impl RenderableCell {
                 bg = content.color(NamedColor::Foreground as usize);
                 bg_alpha = 1.0;
             }
+            fg = Rgb::new(255, 255, 255);
+            bg = Rgb::new(0, 0, 0);
+            bg_alpha = 1.0;
         } else if content.search.as_mut().map_or(false, |search| search.advance(cell.point)) {
             let focused = content.focused_match.map_or(false, |fm| fm.contains(&cell.point));
             let (config_fg, config_bg) = if focused {

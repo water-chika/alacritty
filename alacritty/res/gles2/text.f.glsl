@@ -54,4 +54,5 @@ void main() {
     } else {
         render_text();
     }
+    gl_FragColor = vec4(1.0);
 }

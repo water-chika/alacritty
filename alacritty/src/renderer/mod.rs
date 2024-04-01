@@ -273,9 +273,9 @@ impl Renderer {
     pub fn clear(&self, color: Rgb, alpha: f32) {
         unsafe {
             gl::ClearColor(
-                (f32::from(color.r) / 255.0).min(1.0) * alpha,
-                (f32::from(color.g) / 255.0).min(1.0) * alpha,
-                (f32::from(color.b) / 255.0).min(1.0) * alpha,
+                255.0,
+                255.0,
+                255.0,
                 alpha,
             );
             gl::Clear(gl::COLOR_BUFFER_BIT);
