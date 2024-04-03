@@ -269,6 +269,7 @@ impl RenderableCell {
     /// Check if cell contains any renderable content.
     fn is_empty(&self) -> bool {
             self.character == ' '
+            && self.bg.r == 255
             && self.extra.is_none()
             && !self.flags.intersects(Flags::ALL_UNDERLINES | Flags::STRIKEOUT)
     }
