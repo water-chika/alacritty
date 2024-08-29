@@ -9,6 +9,20 @@ Alacritty - TOML configuration file format.
 Alacritty's configuration file uses the TOML format. The format's specification
 can be found at _https://toml.io/en/v1.0.0_.
 
+# LOCATION
+
+Alacritty doesn't create the config file for you, but it looks for one in the
+following locations on UNIX systems:
+
+. `$XDG_CONFIG_HOME/alacritty/alacritty.toml`
+. `$XDG_CONFIG_HOME/alacritty.toml`
+. `$HOME/.config/alacritty/alacritty.toml`
+. `$HOME/.alacritty.toml`
+
+On Windows, the config file will be looked for in:
+
+. `%APPDATA%\alacritty\alacritty.toml`
+
 # GENERAL
 
 This section documents the root level of the configuration file.
@@ -21,13 +35,15 @@ This section documents the root level of the configuration file.
 	file being loaded last. If a field is already present in a previous import,
 	it will be replaced.
 
-	All imports must either be absolute paths starting with _/_, or paths
-	relative to the user's home directory starting with _~/_.
+	All imports must either be absolute paths starting with _/_, paths relative
+	to the user's home directory starting with _~/_, or paths relative from the
+	current config file.
 
 	Example:
 		import = [++
 	_"~/.config/alacritty/base16-dark.toml"_,++
 	_"~/.config/alacritty/keybindings.toml"_,++
+	_"alacritty-theme/themes/gruvbox_dark.toml"_,++
 ]
 
 *shell* = _"<string>"_ | { program = _"<string>"_, args = [_"<string>"_,] }
@@ -88,7 +104,7 @@ This section documents the *[window]* table of the configuration file.
 
 	Default: { columns = _0_, lines = _0_ }
 
-*position* = _"None"_ | { x = _<integer>_, y = _<integer>_ }
+*position* = _"None"_ | { x = _<integer>_, y = _<integer>_ } # _(has no effect on Wayland)_
 
 	Window startup position.
 
@@ -181,13 +197,13 @@ This section documents the *[window]* table of the configuration file.
 
 	Default: _"None"_
 
-*resize_increments* = _true_ | _false_
+*resize_increments* = _true_ | _false_ # _(works on macOS/X11)_
 
 	Prefer resizing window by discrete steps equal to cell dimensions.
 
 	Default: _false_
 
-*option_as_alt* = _"OnlyLeft"_ | _"OnlyRight"_ | _"Both"_ | _"None"_ # _(macos only)_
+*option_as_alt* = _"OnlyLeft"_ | _"OnlyRight"_ | _"Both"_ | _"None"_ # _(macOS only)_
 
 	Make _Option_ key behave as _Alt_.
 
@@ -647,7 +663,7 @@ terminal and pipe it to other applications.
 
 	Default: _"jfkdls;ahgurieowpq"_
 
-*enabled* = [{ *<regex>*, *<hyperlinks>*, *<post_processing>*, *<persist>*, *<action>*, *<command>* *<binding>*, *<mouse>* },]
+*enabled* = [{ *<regex>*, *<hyperlinks>*, *<post_processing>*, *<persist>*, *<action>*, *<command>*, *<binding>*, *<mouse>* },]
 
 Array with all available hints.
 

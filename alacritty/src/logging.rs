@@ -28,6 +28,9 @@ const ALACRITTY_LOG_ENV: &str = "ALACRITTY_LOG";
 /// Logging target for config error messages.
 pub const LOG_TARGET_CONFIG: &str = "alacritty_config_derive";
 
+/// Logging target for winit events.
+pub const LOG_TARGET_WINIT: &str = "alacritty_winit_event";
+
 /// Name for the environment variable containing extra logging targets.
 ///
 /// The targets are semicolon separated.
@@ -47,6 +50,7 @@ fn extra_log_targets() -> &'static [String] {
 const ALLOWED_TARGETS: &[&str] = &[
     LOG_TARGET_IPC_CONFIG,
     LOG_TARGET_CONFIG,
+    LOG_TARGET_WINIT,
     "alacritty_config_derive",
     "alacritty_terminal",
     "alacritty",
@@ -104,7 +108,7 @@ impl Logger {
         };
 
         #[cfg(not(windows))]
-        let env_var = format!("${}", ALACRITTY_LOG_ENV);
+        let env_var = format!("${ALACRITTY_LOG_ENV}");
         #[cfg(windows)]
         let env_var = format!("%{}%", ALACRITTY_LOG_ENV);
 
@@ -223,7 +227,7 @@ impl OnDemandLogFile {
                         writeln!(io::stdout(), "Created log file at \"{}\"", self.path.display());
                 },
                 Err(e) => {
-                    let _ = writeln!(io::stdout(), "Unable to create log file: {}", e);
+                    let _ = writeln!(io::stdout(), "Unable to create log file: {e}");
                     return Err(e);
                 },
             }
