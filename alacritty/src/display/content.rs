@@ -221,8 +221,16 @@ impl RenderableCell {
         };
 
         if *content.monochrome {
-            fg = Rgb::new(0, 0, 0);
-            bg = Rgb::new(255, 255, 255);
+            let f = fg.r as u16 + fg.g as u16 + fg.b as u16;
+            let b = bg.r as u16 + bg.g as u16+ bg.b as u16;
+            if f >= b {
+                fg = Rgb::new(0, 0, 0);
+                bg = Rgb::new(255, 255, 255);
+            }
+            else {
+                fg = Rgb::new(255, 255, 255);
+                bg = Rgb::new(0, 0, 0);
+            }
             bg_alpha = 1.0;
         }
 
