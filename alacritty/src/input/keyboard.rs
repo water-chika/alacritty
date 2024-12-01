@@ -156,6 +156,7 @@ impl<T: EventListener, A: ActionContext<T>> Processor<T, A> {
     fn process_key_bindings(&mut self, key: &KeyEvent) -> bool {
         let mode = BindingMode::new(self.ctx.terminal().mode(), self.ctx.search_active());
         let mods = self.ctx.modifiers().state();
+        let pass_through_depth = self.ctx.pass_through_depth();
 
         // Don't suppress char if no bindings were triggered.
         let mut suppress_chars = None;
@@ -192,7 +193,7 @@ impl<T: EventListener, A: ActionContext<T>> Processor<T, A> {
                 },
             };
 
-            if binding.is_triggered_by(mode, mods, &key) {
+            if binding.is_triggered_by(mode, mods, &key, pass_through_depth) {
                 // Pass through the key if any of the bindings has the `ReceiveChar` action.
                 *suppress_chars.get_or_insert(true) &= binding.action != Action::ReceiveChar;
 

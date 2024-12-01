@@ -87,6 +87,7 @@ pub struct Processor {
     global_ipc_options: ParsedOptions,
     cli_options: CliOptions,
     config: Rc<UiConfig>,
+    prev_monitor_name: String,
 }
 
 impl Processor {
@@ -130,6 +131,7 @@ impl Processor {
             #[cfg(unix)]
             global_ipc_options: Default::default(),
             config_monitor,
+            prev_monitor_name: String::new(),
         }
     }
 
@@ -253,6 +255,24 @@ impl ApplicationHandler<Event> for Processor {
             Some(window_context) => window_context,
             None => return,
         };
+
+        let display = &mut window_context.display;
+        let window = &display.window;
+        if let Some(monitor) = window.current_monitor() {
+            if let Some(monitor_name) = monitor.name() {
+                if self.prev_monitor_name != monitor_name {
+                    if monitor_name == "HDMI-A-2" {
+                        display.monochrome = true;
+                        display.damage_tracker.frame().mark_fully_damaged();
+                    }
+                    else {
+                        display.monochrome = false;
+                        display.damage_tracker.frame().mark_fully_damaged();
+                    }
+                    self.prev_monitor_name = monitor_name.clone();
+                }
+            }
+        }
 
         let is_redraw = matches!(event, WindowEvent::RedrawRequested);
 
@@ -645,6 +665,10 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
         self.notifier.notify(val);
     }
 
+    fn pass_through_depth(&self) -> u32 {
+        self.display.pass_through_depth
+    }
+
     /// Request a redraw.
     #[inline]
     fn mark_dirty(&mut self) {
@@ -892,6 +916,14 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
         self.display
             .pending_update
             .set_font(self.config.font.clone().with_size(self.display.font_size));
+    }
+
+    fn increase_pass_through(&mut self) {
+        self.display.pass_through_depth += 1;
+    }
+
+    fn decrease_pass_through(&mut self) {
+        self.display.pass_through_depth -= 1;
     }
 
     #[inline]

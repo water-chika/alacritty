@@ -104,6 +104,8 @@ pub trait ActionContext<T: EventListener> {
     fn change_font_size(&mut self, _delta: f32) {}
     fn reset_font_size(&mut self) {}
     fn toggle_monochrome(&mut self) {}
+    fn increase_pass_through(&mut self) {}
+    fn decrease_pass_through(&mut self) {}
     fn pop_message(&mut self) {}
     fn message(&self) -> Option<&Message>;
     fn config(&self) -> &UiConfig;
@@ -141,6 +143,7 @@ pub trait ActionContext<T: EventListener> {
         S: AsRef<OsStr>,
     {
     }
+    fn pass_through_depth(&self) -> u32;
 }
 
 impl Action {
@@ -330,6 +333,8 @@ impl<T: EventListener> Execute<T> for Action {
             Action::DecreaseFontSize => ctx.change_font_size(-FONT_SIZE_STEP),
             Action::ResetFontSize => ctx.reset_font_size(),
             Action::ToggleMonochrome => ctx.toggle_monochrome(),
+            Action::IncreasePassThrough => ctx.increase_pass_through(),
+            Action::DecreasePassThrough => ctx.decrease_pass_through(),
             Action::ScrollPageUp
             | Action::ScrollPageDown
             | Action::ScrollHalfPageUp
@@ -1012,7 +1017,7 @@ impl<T: EventListener, A: ActionContext<T>> Processor<T, A> {
 
         for binding in &mouse_bindings {
             // Don't trigger normal bindings in mouse mode unless Shift is pressed.
-            if binding.is_triggered_by(mode, mods, &button) && (fallback_allowed || !mouse_mode) {
+            if binding.is_triggered_by(mode, mods, &button, 0) && (fallback_allowed || !mouse_mode) {
                 binding.action.execute(&mut self.ctx);
                 exact_match_found = true;
             }
@@ -1021,7 +1026,7 @@ impl<T: EventListener, A: ActionContext<T>> Processor<T, A> {
         if fallback_allowed && !exact_match_found {
             let fallback_mods = mods & !ModifiersState::SHIFT;
             for binding in &mouse_bindings {
-                if binding.is_triggered_by(mode, fallback_mods, &button) {
+                if binding.is_triggered_by(mode, fallback_mods, &button, 0) {
                     binding.action.execute(&mut self.ctx);
                 }
             }
@@ -1162,6 +1167,10 @@ mod tests {
 
         fn terminal(&self) -> &Term<T> {
             self.terminal
+        }
+
+        fn pass_through_depth() -> u32 {
+            self.display.pass_through_depth
         }
 
         fn terminal_mut(&mut self) -> &mut Term<T> {
@@ -1314,9 +1323,9 @@ mod tests {
             #[test]
             fn $name() {
                 if $triggers {
-                    assert!($binding.is_triggered_by($mode, $mods, &KEY));
+                    assert!($binding.is_triggered_by($mode, $mods, &KEY, 0));
                 } else {
-                    assert!(!$binding.is_triggered_by($mode, $mods, &KEY));
+                    assert!(!$binding.is_triggered_by($mode, $mods, &KEY, 0));
                 }
             }
         }

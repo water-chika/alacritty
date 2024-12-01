@@ -51,7 +51,7 @@ pub type MouseBinding = Binding<MouseButton>;
 
 impl<T: Eq> Binding<T> {
     #[inline]
-    pub fn is_triggered_by(&self, mode: BindingMode, mods: ModifiersState, input: &T) -> bool {
+    pub fn is_triggered_by(&self, mode: BindingMode, mods: ModifiersState, input: &T, pass_through_depth: u32) -> bool {
         // Check input first since bindings are stored in one big list. This is
         // the most likely item to fail so prioritizing it here allows more
         // checks to be short circuited.
@@ -59,6 +59,7 @@ impl<T: Eq> Binding<T> {
             && self.mods == mods
             && mode.contains(self.mode)
             && !mode.intersects(self.notmode)
+            && (pass_through_depth == 0 || pass_through_depth > 0 && self.action == Action::DecreasePassThrough)
     }
 
     #[inline]
@@ -138,6 +139,12 @@ pub enum Action {
 
     /// Toggle monochrome mode.
     ToggleMonochrome,
+
+    /// Pass Through Depth +1
+    IncreasePassThrough,
+
+    /// Pass Through Depth -1
+    DecreasePassThrough,
 
     /// Scroll exactly one page up.
     ScrollPageUp,
@@ -546,6 +553,8 @@ fn common_keybindings() -> Vec<KeyBinding> {
         "c",    ModifiersState::CONTROL | ModifiersState::SHIFT, +BindingMode::VI, ~BindingMode::SEARCH; Action::ClearSelection;
         "0",    ModifiersState::CONTROL;                                                                 Action::ResetFontSize;
         "g",    ModifiersState::CONTROL;                                                                 Action::ToggleMonochrome;
+        ">",    ModifiersState::CONTROL | ModifiersState::SHIFT;                                         Action::IncreasePassThrough;
+        "<",    ModifiersState::CONTROL | ModifiersState::SHIFT;                                         Action::DecreasePassThrough;
         "=",    ModifiersState::CONTROL;                                                                 Action::IncreaseFontSize;
         "+",    ModifiersState::CONTROL;                                                                 Action::IncreaseFontSize;
         "-",    ModifiersState::CONTROL;                                                                 Action::DecreaseFontSize;

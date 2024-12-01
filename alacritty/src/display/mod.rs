@@ -359,6 +359,8 @@ pub struct Display {
 
     pub monochrome: bool,
 
+    pub pass_through_depth: u32,
+
     /// Mapped RGB values for each terminal color.
     pub colors: List,
 
@@ -511,12 +513,15 @@ impl Display {
             info!("Failed to disable vsync: {}", err);
         }
 
+        let mut monochrome = false;
+
         Ok(Self {
             context: ManuallyDrop::new(Replaceable::new(context)),
             visual_bell: VisualBell::from(&config.bell),
             renderer: ManuallyDrop::new(renderer),
             surface: ManuallyDrop::new(surface),
-            monochrome: false,
+            monochrome: monochrome,
+            pass_through_depth: 0,
             colors: List::from(&config.colors),
             frame_timer: FrameTimer::new(),
             raw_window_handle,
